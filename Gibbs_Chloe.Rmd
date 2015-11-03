@@ -1,0 +1,42 @@
+---
+title: "Gibbs"
+author: "Tianyu Zhan"
+date: "November 3, 2015"
+output: html_document
+---
+# Gibbs Sampling  
+Since $p\left(x\middle|y\right)\propto y e^{-yx},0<x<B<\infty$, we can get $$\int_0^{B}y e^{-yx}~dx=1-e^{-yB} \propto 1$$  
+In order to get an integral that equals $1$, we can get the conditional probability of $x$ as $$p\left(x\middle|y\right)=\frac{y e^{-yx}}{1-e^{-yB}}$$
+Calculate the CDF:$$F\left(x\middle|y\right)=\int_0^{x}p\left(x\middle|y\right)~dx=\frac{1-e^{-yx}}{1-e^{-yB}}, 0<x<B<\infty$$
+Then, get the inverse function of CDF:$$F^{-1}\left(u\right)=-\frac{\log\left({1-u\left(1-e^{-yB}\right)}\right)}{y}$$
+We can generate samples of $x$ using this formula. The generation of samples of $y$ is of the same logic, since $p\left(x\middle|y\right)$ and $p\left(y\middle|x\right)$ are symmetric.  
+The followring R code shows how Gibbs Sampling works.  
+```{r}
+Gibbs=function(n,B,burnin){
+  x.update=c()
+  y.update=c()
+  y.update[1]=runif(1)
+  # randomly generate a starting value of y
+  for (i in 1:n){
+    x.update[i]=-log(1-runif(1)*(1-exp(-y.update[i]*B)))/y.update[i]
+    # using the new y value to update x
+    y.update[i+1]=-log(1-runif(1)*(1-exp(-x.update[i]*B)))/x.update[i]
+    # using the new x value to update y
+  }
+  x=x.update[-(1:burnin)]
+  y=y.update[-(1:burnin)]
+  # drop the initial values
+  hist(x,freq=F,breaks=20)
+  lines(density(x))
+  return(mean(x))
+  # caulculate the estimate of expectation of x
+}
+```
+If we choose B=5, then for sample sizes T=500, 5000, 50000, we can get three histograms. The estimate of the expectation of $x$ is $$E_{p\left(X\right)}\left(X\right)=\frac{1}{n}\sum_{i=1}^{n}X_{i}=\bar{X}$$
+```{r}
+set.seed(526)
+# choose 20% of the sample size as "burnin"
+Gibbs(500,5,100)
+Gibbs(5000,5,1000)
+Gibbs(50000,5,10000)
+```
