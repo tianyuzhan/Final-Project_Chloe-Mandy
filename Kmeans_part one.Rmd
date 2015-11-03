@@ -1,0 +1,52 @@
+---
+title: "Kmeans_part one"
+author: "Tianyu Zhan"
+date: "November 3, 2015"
+output: html_document
+---
+  
+# K-means  
+Use k-means method to cluster the wines into 3 groups.
+```{r}
+data(wine,package="rattle")
+fit=kmeans(wine[-1],3)
+# the default measure to calculate k-means is Euclidean distance
+library('fpc')
+plotcluster(wine[-1],fit$cluster)
+```  
+
+From the graph we can see that the boundaries are not very clear, which indicates that some observations can be classified into either groups. 
+Draw parallel coorinates plot to see how variables contributed in each cluster.  
+```{r}
+library(MASS)
+parcoord(wine[-1],fit$cluster)
+```  
+We cannot observe a clear pattern from this graph.  
+Take a look at the misclassification rate (number of misclassified obs divided by total number of obs).
+```{r,echo=F}
+mis1=table(wine$Type,fit$cluster)
+mis1
+```   
+There are 145(=46+20+29+50) out of 178 obs that have been misclassified, so the misclassification rate is 0.81.  
+To take a further look at how well the kmeans algorithm did, we use ARI (Adjusted Rand Index) as an evaluation criteria. 
+$$ARI=\frac{\Sigma_{ij}\binom{n_{ij}}{2}-[\Sigma_{i}\binom{a_i}{2}\Sigma_{j}\binom{b_j}{2}]/\binom{n}{2}}{\frac{1}{2}[\Sigma_{i}\binom{a_i}{2}+\Sigma_{j}\binom{b_j}{2}]-[\Sigma_{i}\binom{a_i}{2}\Sigma_{j}\binom{b_j}{2}]/\binom{n}{2}}$$
+where $n_{ij}$ denotes for the ith row and jth column in a contigency table; $a_i$ denotes for the sum of ith row and $b_j$ denotes for the sum of jth column.
+```{r,echo=F}
+library(flexclust)
+randIndex(mis1)
+```   
+A small ARI indicates a poor classification.  
+
+We want to improve the performance by __scaling and centering__ (scale() function can do this work) the data.
+```{r}
+fit2=kmeans(scale(wine[-1]),3)
+plotcluster(scale(wine[-1]),fit2$cluster)
+parcoord(scale(wine[-1]),fit2$cluster)
+mis2=table(wine$Type,fit2$cluster)
+mis2
+randIndex(mis2)
+```  
+We can see the data is clustered very well, with no collapse between clusters.  
+From the graph, we may consider that black cluster contains wine with low flavanoids value, low proanthocyanins value, low hue value; or green cluster contains wine which has dilution value higher than wine in red cluster.  
+This time, the misclassification rate is 0.034, much better than the previous result. ARI is 0.897, also increased a lot.    
+Therefore, scaling the data can improve the clustering quality.
