@@ -1,0 +1,84 @@
+---
+title: "K-Means-Iris"
+author: "Mandy"
+date: "2015.11.3"
+output: html_document
+---
+
+---
+title: "K-means Iris"
+author: "Mandy"
+date: "2015.11.2日"
+output: html_document
+---
+
+# Does k-means work well for classifying this dataset? Does scaling help?
+```{r}
+data("iris")
+head(iris)
+irisnew <- iris[-5]
+```
+
+```{r}
+require("NbClust")
+nc <- NbClust(irisnew, min.nc=2, max.nc=15, method="kmeans")
+barplot(table(nc$Best.n[1,]),xlab="Num of Clusters", ylab="Num of Criteria")
+```
+
+We could see from the plot that 2 clusters are the best. This also agrees with the barplot results with 2 clusters being supported the most by 10 indicies. However, 3 clusters are the second suggested one with 8 proposed indices.
+```{r}
+wss <- 0
+for (i in 1:15){
+  wss[i] <-sum(kmeans(irisnew, centers=i)$withinss)
+}
+plot(1:15,wss,type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+```
+
+The sum of square error (SSE) scree plot also shows that cluster=2 is the significant bend. Both methods suggest k=2 is the best, but as there are 3 types in iris, we continue to try 2 and 3 clusters respectively.
+
+```{r}
+fit.kmiris2 <- kmeans(irisnew,2)
+fit.kmiris2
+fit.kmiris3 <- kmeans(irisnew,3)
+fit.kmiris3
+library(fpc)
+plotcluster(irisnew, fit.kmiris2$cluster)
+plotcluster(irisnew, fit.kmiris3$cluster)
+```
+
+when cluster=2, (between_SS / total_SS =  77.6 %) thus the overall difference is very large between groups. Also, there are almost no collapse between clusters, but there are 3 data points in group 2 very close to group 1.
+When cluster=3, (between_SS / total_SS =  88.4 %) yields a better difference across groups. There is some collapse between group1 and 3 but overall it makes more sense because it's more like the real case.
+Also, it's noticeable that the two clustering number give very different results.
+
+```{r}
+a=table(iris$Species,fit.kmiris2$cluster)
+b=table(iris$Species,fit.kmiris3$cluster)
+library(flexclust)
+randIndex(a)
+randIndex(b)
+```
+
+When cluster=2, ARI is only 0.54, which is conceivable because there are only 2 clusters compared to the original 3 groups. 
+When cluster=3, ARI is 0.73, which is still not satisfatory so I continue to scale the data.
+
+```{r}
+nc <- NbClust(scale(iris[-5]), min.nc=2, max.nc=15, method="kmeans")
+barplot(table(nc$Best.n[1,]),xlab="Num of Clusters", ylab="Num of Criteria")
+```
+
+After scaling, the two methods all suggest cluster number to be 3. 
+```{r}
+fit2=kmeans(scale(iris[-5]),3)
+plotcluster(scale(iris[-5]), fit2$cluster)
+```
+
+The plot looks like the unscaled plot with cluster=3, however the boundary is even more blur.
+
+```{r}
+c=table(iris$Species,fit2$cluster)
+library(flexclust)
+randIndex(c)
+```
+
+After scaling, ARI drops to 0.62. K-means seems not a good classfication method for iris and the scaling doesn't help at all.
+
