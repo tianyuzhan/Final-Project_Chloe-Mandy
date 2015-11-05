@@ -1,0 +1,102 @@
+---
+title: "MH-1105"
+author: "Mandy"
+date: "2015.11.5"
+output: html_document
+---
+```{r}
+set.seed(730)
+mh.beta <- function(c,n.sims) {
+  x.update <- function(x.cur,c) {
+    # choosing candidate
+    x.can <- rbeta(1, c*x.cur, c*(1-x.cur))
+    # likelihood(Whether I should use d or p)
+    a1 <- dbeta(x.can, 6,4)/dbeta(x.cur,6,4)
+    # jumping distribution
+    a2_num <- dbeta(x.cur, c*x.cur, c*(1-x.cur))
+    a2_den <- dbeta(x.can, c*x.can, c*(1-x.can))
+    a2 <- a2_num / a2_den
+    # adjusted acceptance probability
+    accept.prob <- (a2 * (dbeta(x.can,6,4)/dbeta(x.cur,6,4)))
+    if (runif(1) <= accept.prob) x.cur=x.can
+    else x.cur
+    return(x.cur)
+  }
+  draws <- c()
+  x.cur <- runif(1)
+  for (i in 1:n.sims) {
+    draws[i] <- x.cur
+    x.cur <- x.update(x.cur,c)
+  }
+  #draws <-draws[seq((burnIn+1),n.sims,by=30)]
+  par(mfrow=c(1,3))
+  plot(draws,ylim=c(0,1),main = paste("Trace plot: c = ", c, sep=""))
+  acf(draws,ylim=c(0,1),main= paste("Autocorrelation Plot: c = ", c, sep=""))
+  hist(draws, main=paste("Autocorrelation Plot: c = ", c, sep=""),freq=FALSE)
+  comp <- ks.test(draws[!duplicated(draws)], "pbeta",6,4)
+  print (comp)
+  return()
+}
+```
+To commit a Metropolis Hastling alogorithm we start from a random variable from uniform distribution. Then we jump to the candidate based on our proposal function ~~~(1)
+But here we should be aware of the fact that Beta distribution is not symmmetric, so we need to add a correction to the posterior factor, that is ~~~ (2). For example, ~~~(3). After that, we get acceptance ratio r, r=
+Then we compare r to u~ Uniform(0,1). If r > u we accept it and jump to the new point, or we remain unmoved at current state. 
+The whole process loops designated times as iterations, and normally we need to do thining and burn in to reduce autocorrelation and get desired distribution.
+
+```{r}
+hist(rbeta(10000,6,4),freq=FALSE)
+mh.beta(1,10000)
+```
+The histogram of our simulation is more sken to the left compared to beta(6,4) and p-value from K-S Test equals 2.2e-16, which strongly reject that our simulation comes from Beta(6,4).
+
+```{r}
+mh.beta(0.1,10000)
+mh.beta(2.5,10000)
+mh.beta(10,10000) 
+```
+
+Overall, c=2.5 is the most effective.From the ACF plot, we could see clearly that we need to do systematic sampling to thin the simulation whe n c=0.1 and c=10. Although c=10 tends to perform a little better than c=0.1. The histogram for c=0.1 is also very wired, and overall distribution is far more unstable and fat-tail than beta distribution. Still, c=10 is better than c=0.1 and c=2.5 is the best with the shape most alike to beta(6,4). 
+
+For further improve the performance for c=0.1 and c=10 I modify the code to add one line of burn-in and systematic sampling as follows:
+```{r}
+thinmh.beta <- function(c,n.sims,burnIn) {
+  x.update <- function(x.cur,c) {
+    # choosing candidate
+    x.can <- rbeta(1, c*x.cur, c*(1-x.cur))
+    a1 <- dbeta(x.can, 6,4)/dbeta(x.cur,6,4)
+    # jumping distribution
+    a2_num <- dbeta(x.cur, c*x.cur, c*(1-x.cur))
+    a2_den <- dbeta(x.can, c*x.can, c*(1-x.can))
+    a2 <- a2_num / a2_den
+    # adjusted acceptance probability
+    accept.prob <- (a2 * (dbeta(x.can,6,4)/dbeta(x.cur,6,4)))
+    if (runif(1) <= accept.prob) x.cur=x.can
+    else x.cur
+    return(x.cur)
+  }
+  draws <- c()
+  x.cur <- runif(1)
+  for (i in 1:n.sims) {
+    draws[i] <- x.cur
+    x.cur <- x.update(x.cur,c)
+  }
+  # Add an line of thining and burnIn.
+  draws <-draws[seq((burnIn+1),n.sims,by=30)]
+  par(mfrow=c(1,3))
+  plot(draws,ylim=c(0,1),main = paste("Trace plot after thining: c = ", c, sep=""))
+  acf(draws,ylim=c(0,1),main= paste("Autocorrelation Plot after thining: c = ", c, sep=""))
+  hist(draws, main=paste("Histogram after thining: c = ", c, sep=""),freq=FALSE)
+  comp <- ks.test(draws[!duplicated(draws)], "pbeta",6,4)
+  print (comp)
+  return()
+}
+```
+
+```{r}
+thinmh.beta(0.1,10000,1000)
+thinmh.beta(0.1,10000,300)
+thinmh.beta(10,10000,300)
+thinmh.beta(10,10000,100)
+```
+
+We could see from ACF plot that to reduce the dependency of variables, the case that c=0.1 needs more burnIn than c=10 to become stable. To improve the efficiency of MCMC, it's better to choose a proposal function that is close to our target distribution. From histogram we could see that Expected value= 6/(6+4)=0.6, and c close to 0.6 is more ideal. So in this sense, c=1 should be better than c=10.
