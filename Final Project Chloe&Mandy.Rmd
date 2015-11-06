@@ -61,6 +61,7 @@ Overall, c=2.5 is the most effective. It has a nicer histogram and an autocorrel
 
 For further improve the performance for c=0.1 and c=10 I modify the code to add one line of burn-in and systematic sampling as follows:
 ```{r}
+set.seed(730)
 thinmh.beta <- function(c,n.sims,burnIn) {
   x.update <- function(x.cur,c) {
     # choosing candidate
@@ -95,8 +96,6 @@ thinmh.beta <- function(c,n.sims,burnIn) {
 
 ```{r}
 thinmh.beta(0.1,10000,1000)
-thinmh.beta(0.1,10000,100)
-thinmh.beta(10,10000,300)
 thinmh.beta(10,10000,100)
 ```
 
@@ -105,8 +104,6 @@ We could see from ACF plot that to reduce the dependency of variables, the case 
 ```{r}
 thinmh.beta(10,10000,300)
 thinmh.beta(2.5,10000,300)
-thinmh.beta(10,10000,100)
-thinmh.beta(2.5,10000,100)
 ```
 After thining c=10 rather than c=2.5 performs the best. To improve the efficiency of MCMC, it's better to choose a proposal function that is close to our target distribution. As for Beta distribution mean = 6/(6+4)=0.6, when c=10 we will sample the most portion of beta(10*0.6, 10*(1-0.6)), so in this sense when it reaches stationary, c=10 should perform the best. Thus when we have larger burnIn c=10 is the best, for example when burnIn=300.It is supported by nice histogram and a larger p-value.  However it takes longer for c=10 than c=2.5 to reach stationary, for example when burnin=100, p-value(c=10)=0.33 < p-value(c=2.5)=0.63, but the histogram for c=10 is still the best. Overall to ensure that we are sampling from Beta(6,4), we could add burnin to our code and choose c=10. 
 
