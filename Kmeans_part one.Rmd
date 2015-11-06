@@ -40,7 +40,21 @@ where $n_{ij}$ denotes for the ith row and jth column in a contigency table; $a_
 library(flexclust)
 randIndex(mis1)
 ```   
-A small ARI indicates a poor classification.  
+A small ARI indicates a poor classification.
+
+We also want to use another internal index __Silhouette__ to evaluate the clustering result. Silhouette s(x):
+$$s\left(x\right)=\frac{b\left(x\right)-a\left(x\right)}{max\left\{a\left(x\right),b\left(x\right)\right\}}$$
+where cohesion a(x) is the average distance of $x$ to all other vectors in the same cluster, and separation b(x) is the average distance of $x$ to the vectors in other clusters. Its values range from -1 to 1. A high silhouette value indicates that i is well-matched to its own cluster, and poorly-matched to neighboring clusters. If most points have a high silhouette value, then the clustering solution is appropriate. If many points have a low or negative silhouette value, then the clustering solution may have either too many or too few clusters.  
+```{r}
+library(clusterCrit)
+# an open-source package to compute all the clustering indices
+intIdx=intCriteria(as.matrix(wine[-1]),fit$cluster,"all")
+ccfit=cclust(as.matrix(wine[-1]),3)
+set.seed(526)
+plot(shadow(ccfit))
+```  
+
+From the plot we can see that in each cluster, there are some observations that have small silhouette value, which indicates a not-so-good classification.
 
 We want to improve the performance by __scaling and centering__ (scale() function can do this work) the data.
 ```{r}
@@ -57,6 +71,14 @@ From the graph, we may consider that black cluster contains wine with low flavan
 
 This time, the misclassification rate is 0.034, much better than the previous result. ARI is 0.897, also increased a lot.    
 Therefore, scaling the data can improve the clustering quality.  
+
+```{r}
+intIdx2=intCriteria(as.matrix(scale(wine[-1])),fit2$cluster,"all")
+ccfit2=cclust(as.matrix(scale(wine[-1])),3)
+plot(shadow(ccfit2))
+```  
+
+From the plot, we can see that most observations in each cluster have a large silhouette value, which suggests that the classification is very good.
 
 In addition to K-means, we use __Hierarchial Clustering__--another commonly used clustering method--as an alternative method. First we consider the unscaled data.
 ```{r}
