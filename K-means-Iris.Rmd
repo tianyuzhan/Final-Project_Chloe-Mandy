@@ -45,11 +45,16 @@ Also, it's noticeable that the two clustering numbers give very different result
 ```{r}
 a=table(iris$Species,fit.kmiris2$cluster)
 b=table(iris$Species,fit.kmiris3$cluster)
+a
+b
+```
+
+```{r}
 library(flexclust)
 randIndex(a)
 randIndex(b)
 ```
-
+A small ARI indicates a poor classification.  
 When cluster=2, ARI is only 0.54, which is conceivable because there are only 2 clusters compared to the original 3 groups.  
 When cluster=3, ARI is 0.73, which is still not satisfatory so I continue to scale the data.
 
@@ -69,5 +74,5 @@ c=table(iris$Species,fit2$cluster)
 library(flexclust)
 randIndex(c)
 ```  
-After scaling, ARI drops to 0.62. K-means seems not a good classfication method for iris and the scaling doesn't help at all.  
+After scaling, ARI drops to 0.62. K-means seems not a good classfication method for iris and the scaling doesn't help. It is because the predictor in iris are similar in terms of sacle. 
 

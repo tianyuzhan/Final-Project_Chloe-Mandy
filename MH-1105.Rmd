@@ -13,11 +13,11 @@ mh.beta <- function(c,n.sims) {
     # likelihood(Whether I should use d or p)
     a1 <- dbeta(x.can, 6,4)/dbeta(x.cur,6,4)
     # jumping distribution
-    a2_num <- dbeta(x.cur, c*x.cur, c*(1-x.cur))
-    a2_den <- dbeta(x.can, c*x.can, c*(1-x.can))
+    a2_num <- dbeta(x.cur, c*x.can, c*(1-x.can))
+    a2_den <- dbeta(x.can, c*x.cur, c*(1-x.cur))
     a2 <- a2_num / a2_den
     # adjusted acceptance probability
-    accept.prob <- (a2 * (dbeta(x.can,6,4)/dbeta(x.cur,6,4)))
+    accept.prob <- (a2 * a1)
     if (runif(1) <= accept.prob) x.cur=x.can
     else x.cur
     return(x.cur)
@@ -47,7 +47,7 @@ The whole process loops designated times as iterations, and normally we need to 
 hist(rbeta(10000,6,4),freq=FALSE)
 mh.beta(1,10000)
 ```
-The histogram of our simulation is more sken to the left compared to beta(6,4) and p-value from K-S Test equals 2.2e-16, which strongly reject that our simulation comes from Beta(6,4).
+The histogram of our simulation is more sken to the left compared to beta(6,4) and p-value from K-S Test equals 2.027e-06, which rejects that our simulation comes from Beta(6,4).
 
 ```{r}
 mh.beta(0.1,10000)
@@ -55,7 +55,7 @@ mh.beta(2.5,10000)
 mh.beta(10,10000) 
 ```
 
-Overall, c=2.5 is the most effective.From the ACF plot, we could see clearly that we need to do systematic sampling to thin the simulation whe n c=0.1 and c=10. Although c=10 tends to perform a little better than c=0.1. The histogram for c=0.1 is also very wired, and overall distribution is far more unstable and fat-tail than beta distribution. Still, c=10 is better than c=0.1 and c=2.5 is the best with the shape most alike to beta(6,4). 
+Overall, c=2.5 is the most effective. It has a nicer histogram and an autocorrelation plot. While for c=0.1 and c=10, we could see clearly that we need to do systematic sampling to thin the simulation. The histogram for c=0.1 is really wired, and overall distribution is far more unstable and fat-tail than beta distribution. C=10 is better than c=0.1 in histogram and the overall shape assembles Beta distribution. Overall c=2.5 is the best.
 
 For further improve the performance for c=0.1 and c=10 I modify the code to add one line of burn-in and systematic sampling as follows:
 ```{r}
@@ -64,12 +64,11 @@ thinmh.beta <- function(c,n.sims,burnIn) {
     # choosing candidate
     x.can <- rbeta(1, c*x.cur, c*(1-x.cur))
     a1 <- dbeta(x.can, 6,4)/dbeta(x.cur,6,4)
-    # jumping distribution
-    a2_num <- dbeta(x.cur, c*x.cur, c*(1-x.cur))
-    a2_den <- dbeta(x.can, c*x.can, c*(1-x.can))
+    a2_num <- dbeta(x.cur, c*x.can, c*(1-x.can))
+    a2_den <- dbeta(x.can, c*x.cur, c*(1-x.cur))
     a2 <- a2_num / a2_den
     # adjusted acceptance probability
-    accept.prob <- (a2 * (dbeta(x.can,6,4)/dbeta(x.cur,6,4)))
+    accept.prob <- (a2 * a1)
     if (runif(1) <= accept.prob) x.cur=x.can
     else x.cur
     return(x.cur)
@@ -94,9 +93,17 @@ thinmh.beta <- function(c,n.sims,burnIn) {
 
 ```{r}
 thinmh.beta(0.1,10000,1000)
-thinmh.beta(0.1,10000,300)
+thinmh.beta(0.1,10000,100)
 thinmh.beta(10,10000,300)
 thinmh.beta(10,10000,100)
 ```
 
-We could see from ACF plot that to reduce the dependency of variables, the case that c=0.1 needs more burnIn than c=10 to become stable. To improve the efficiency of MCMC, it's better to choose a proposal function that is close to our target distribution. From histogram we could see that Expected value= 6/(6+4)=0.6, and c close to 0.6 is more ideal. So in this sense, c=1 should be better than c=10.
+We could see from ACF plot that to reduce the dependency of variables, the case that c=0.1 needs more burnIn than c=10 to become stable. Also the p-value from K-S test when c=10 are higher compared to c=0.1.
+
+```{r}
+thinmh.beta(10,10000,300)
+thinmh.beta(2.5,10000,300)
+thinmh.beta(10,10000,100)
+thinmh.beta(2.5,10000,100)
+```
+After thining c=10 rather than c=2.5 performs the best. To improve the efficiency of MCMC, it's better to choose a proposal function that is close to our target distribution. As for Beta distribution mean = 6/(6+4)=0.6, when c=10 we will sample the most portion of beta(10*0.6, 10*(1-0.6)), so in this sense when it reaches stationary, c=10 should perform the best. Thus when we have larger burnIn c=10 is the best, for example when burnIn=300.It is supported by nice histogram and a larger p-value.  However it takes longer for c=10 than c=2.5 to reach stationary, for example when burnin=100, p-value(c=10)=0.33 < p-value(c=2.5)=0.63, but the histogram for c=10 is still the best. Overall to ensure that we are sampling from Beta(6,4), we could add burnin to our code and choose c=10. 
