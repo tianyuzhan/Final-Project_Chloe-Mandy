@@ -7,9 +7,12 @@ output: html_document
   
 # K-means  
 Use k-means method to cluster the wines into 3 groups.
-```{r}
+```{r,echo=F}
 data(wine,package="rattle")
 fit=kmeans(wine[-1],3)
+```
+
+```{r}
 # the default measure to calculate k-means is Euclidean distance
 library('fpc')
 plotcluster(wine[-1],fit$cluster)
@@ -21,13 +24,15 @@ Draw parallel coorinates plot to see how variables contributed in each cluster.
 library(MASS)
 parcoord(wine[-1],fit$cluster)
 ```  
-We cannot observe a clear pattern from this graph.  
+We cannot observe a clear pattern from this graph.
+
 Take a look at the misclassification rate (number of misclassified obs divided by total number of obs).
 ```{r,echo=F}
 mis1=table(wine$Type,fit$cluster)
 mis1
 ```   
-There are 145(=46+20+29+50) out of 178 obs that have been misclassified, so the misclassification rate is 0.81.  
+There are 145(=46+20+29+50) out of 178 obs that have been misclassified, so the misclassification rate is 0.81.
+
 To take a further look at how well the kmeans algorithm did, we use ARI (Adjusted Rand Index) as an evaluation criteria. 
 $$ARI=\frac{\Sigma_{ij}\binom{n_{ij}}{2}-[\Sigma_{i}\binom{a_i}{2}\Sigma_{j}\binom{b_j}{2}]/\binom{n}{2}}{\frac{1}{2}[\Sigma_{i}\binom{a_i}{2}+\Sigma_{j}\binom{b_j}{2}]-[\Sigma_{i}\binom{a_i}{2}\Sigma_{j}\binom{b_j}{2}]/\binom{n}{2}}$$
 where $n_{ij}$ denotes for the ith row and jth column in a contigency table; $a_i$ denotes for the sum of ith row and $b_j$ denotes for the sum of jth column.
@@ -46,7 +51,31 @@ mis2=table(wine$Type,fit2$cluster)
 mis2
 randIndex(mis2)
 ```  
-We can see the data is clustered very well, with no collapse between clusters.  
-From the graph, we may consider that black cluster contains wine with low flavanoids value, low proanthocyanins value, low hue value; or green cluster contains wine which has dilution value higher than wine in red cluster.  
+We can see the data is clustered very well, with no collapse between clusters.
+
+From the graph, we may consider that black cluster contains wine with low flavanoids value, low proanthocyanins value, low hue value; or green cluster contains wine which has dilution value higher than wine in red cluster.
+
 This time, the misclassification rate is 0.034, much better than the previous result. ARI is 0.897, also increased a lot.    
-Therefore, scaling the data can improve the clustering quality.
+Therefore, scaling the data can improve the clustering quality.  
+
+In addition to K-means, we use Hierarchial Clustering as an alternative method. First we consider the unscaled data.
+```{r}
+wine_dist=dist(wine[-1])
+fit_h=hclust(wine_dist)
+h_cluster=cutree(fit_h,k=3)
+mis3=table(wine$Type,h_cluster)
+randIndex(mis3)
+```
+
+Follow the same procedures as above, we find the ARI derived from Hierarchial Clustering is 0.371, almost the same as K-means.  
+Then we try on scaled data.  
+```{r}
+wine_dist2=dist(scale(wine[-1]))
+fit_h2=hclust(wine_dist2)
+h_cluster2=cutree(fit_h2,k=3)
+mis4=table(wine$Type,h_cluster2)
+randIndex(mis4)
+```
+
+The ARI is only 0.577, much smaller than the result (0.897) we get from K-means. Therefore, in terms of scaled data, we think K-means is better than Hierarchial Clustering, since it has a smaller misclassification rate and larger ARI.  
+
