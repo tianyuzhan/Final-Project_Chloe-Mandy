@@ -38,7 +38,7 @@ mh.beta <- function(c,n.sims) {
   return()
 }
 ```
-To commit a Metropolis Hastling alogorithm we start from a random variable from uniform distribution. Then we jump to the candidate based on our proposal function ~~~(1)
+To commit a Metropolis Hastling alogorithm we start from a random variable from uniform distribution. Then we jump to the candidate based on our proposal function $$\phi_{prop}|\phi_{old}\sim Beta\left(c\phi_{old},c\left(1-\phi_{old}\right)\right)$$
 But here we should be aware of the fact that Beta distribution is not symmmetric, so we need to add a correction to the posterior factor, that is $$\frac{J_t\left(\theta^{t-1}|\theta^{*}\right)}{J_t\left(\theta^{*}|\theta^{t-1}\right)}$$ For example, $$J_t\left(\theta^{*}|\theta^{t-1}\right)\propto Beta\left(c\theta^{t-1},\left(1-c\right)\theta^{t-1}\right)$$ After that, we get acceptance ratio r, $$r=\frac{p\left(\theta^{*}|y\right)/J_t\left(\theta^{*}|\theta^{t-1}\right)}{p\left(\theta^{t-1}|y\right)/J_t\left(\theta^{t-1}|\theta^{*}\right)}$$
 Then we compare r to u~ Uniform(0,1). If r > u we accept it and jump to the new point, or we remain unmoved at current state. 
 The whole process loops designated times as iterations, and normally we need to do thining and burn in to reduce autocorrelation and get desired distribution.
