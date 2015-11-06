@@ -58,7 +58,7 @@ From the graph, we may consider that black cluster contains wine with low flavan
 This time, the misclassification rate is 0.034, much better than the previous result. ARI is 0.897, also increased a lot.    
 Therefore, scaling the data can improve the clustering quality.  
 
-In addition to K-means, we use Hierarchial Clustering as an alternative method. First we consider the unscaled data.
+In addition to K-means, we use __Hierarchial Clustering__--another commonly used clustering method--as an alternative method. First we consider the unscaled data.
 ```{r}
 wine_dist=dist(wine[-1])
 fit_h=hclust(wine_dist)
